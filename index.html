@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Food Cart Sales Tracker (BDT)</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #111827;
+            --text: #e5e7eb;
+            --muted: #9ca3af;
+            --border: #1f2937;
+            --danger: #b91c1c;
+            --primary: #2563eb;
+            --accent: #0b5e2b
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        body {
+            margin: 0;
+            font-family: system-ui, Roboto, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text)
+        }
+
+        header {
+            position: sticky;
+            top: 0;
+            background: #0d1324;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            z-index: 20
+        }
+
+        .headerbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 20px
+        }
+
+        .stats {
+            margin-left: auto;
+            text-align: right
+        }
+
+        .stats strong {
+            font-size: 18px
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px
+        }
+
+        button {
+            padding: 10px 12px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white
+        }
+
+        button.primary {
+            background: var(--primary)
+        }
+
+        button.secondary {
+            background: #374151
+        }
+
+        button.warn {
+            background: var(--danger)
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px
+        }
+
+        @media(min-width:640px) {
+            .grid {
+                grid-template-columns: repeat(3, 1fr)
+            }
+        }
+
+        .card {
+            background: #1f2937;
+            padding: 14px;
+            border-radius: 12px;
+            text-align: left;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: transform .04s ease, opacity .2s
+        }
+
+        .card:hover {
+            transform: translateY(-1px)
+        }
+
+        .card h3 {
+            margin: 0 0 6px;
+            font-size: 16px
+        }
+
+        .price {
+            font-weight: 700;
+            opacity: .9
+        }
+
+        .list {
+            margin-top: 14px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden
+        }
+
+        .rowi {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            align-items: center
+        }
+
+        .rowi:last-child {
+            border-bottom: none
+        }
+
+        .rowleft {
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .muted {
+            color: var(--muted)
+        }
+
+        .footer-note {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--muted);
+            text-align: center
+        }
+
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 50
+        }
+
+        .modal.show {
+            display: flex
+        }
+
+        .panel {
+            background: #111827;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            max-width: 680px;
+            width: 95%;
+            max-height: 85vh;
+            overflow: auto
+        }
+
+        .panel h3 {
+            margin: 0 0 8px
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse
+        }
+
+        .table th,
+        .table td {
+            border-bottom: 1px solid var(--border);
+            padding: 8px;
+            text-align: left
+        }
+
+        .table input {
+            width: 100%;
+            padding: 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: #0b1222;
+            color: #fff
+        }
+
+        .pill {
+            display: inline-block;
+            padding: 2px 8px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: #0b1222;
+            color: #fff;
+            font-size: 12px
+        }
+
+        .qtybtn {
+            padding: 10px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #0b1222;
+            color: #fff;
+            cursor: pointer
+        }
+
+        .bottom-toolbar {
+            position: sticky;
+            bottom: 0;
+            background: #0d1324;
+            border-top: 1px solid var(--border);
+            padding: 10px;
+            margin-top: 16px;
+            z-index: 15
+        }
+    </style>
+</head>
+
+<body>
+    <header class="container">
+        <div class="headerbar">
+            <h1>📊 Food Cart Sales (৳)</h1>
+            <div class="stats">
+                <div>Today Total: <strong>৳<span id="total">0</span></strong></div>
+            </div>
+        </div>
+        <div class="toolbar">
+            <button id="export" class="primary">⬇️ Export CSV</button>
+            <button id="recordsBtn" class="secondary">📚 Records</button>
+            <button id="manageBtn" class="secondary">🛠️ Manage Items</button>
+        </div>
+    </header>
+
+    <main class="container">
+        <section id="items" class="grid"></section>
+        <h2 style="display:flex;align-items:center;gap:10px;margin-top:16px">Today’s Sales <span class="pill">Items:
+                <span id="count">0</span></span></h2>
+        <div id="sales" class="list"></div>
+        <div class="bottom-toolbar">
+            <button id="doneDay" class="warn" style="width:100%">✅ Done for the Day</button>
+        </div>
+        <p class="footer-note">Offline app — your data stays on this device.</p>
+    </main>
+
+    <!-- Manage Items Modal -->
+    <div id="manageModal" class="modal">
+        <div class="panel">
+            <h3>Manage Items (৳)</h3>
+            <table class="table" id="itemsTable">
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th style="width:120px">Price</th>
+                        <th style="width:70px">Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <div class="toolbar" style="justify-content:space-between">
+                <button id="addRow" class="secondary">➕ Add Row</button>
+                <div>
+                    <button id="saveItemsBtn" class="primary">💾 Save</button>
+                    <button data-close="manageModal" class="secondary">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Records Modal -->
+    <div id="recordsModal" class="modal">
+        <div class="panel">
+            <h3>Saved Records</h3>
+            <div id="recordsList"></div>
+            <div class="toolbar" style="justify-content:flex-end">
+                <button data-close="recordsModal" class="secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Day Detail Modal -->
+    <div id="detailModal" class="modal">
+        <div class="panel">
+            <h3 id="detailTitle">Day Details</h3>
+            <div id="detailBody"></div>
+            <div class="toolbar" style="justify-content:space-between">
+                <button id="exportDetailCsv" class="primary">⬇️ Export CSV</button>
+                <button data-close="detailModal" class="secondary">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quantity Picker Modal -->
+    <div id="qtyModal" class="modal">
+        <div class="panel">
+            <h3 id="qtyTitle">Select Quantity</h3>
+            <div id="qtyQuick" class="toolbar"></div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+                <input id="qtyInput" type="number" min="1" step="1" value="1" class="table"
+                    style="width:120px;padding:8px;border-radius:8px;border:1px solid var(--border);background:#0b1222;color:#fff" />
+                <button id="qtyOk" class="primary">Add</button>
+                <button data-close="qtyModal" class="secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const LS_PREFIX = 'fcs_day_';
+        const LS_ITEMS = 'fcs_items';
+        const CURRENCY = '৳';
+
+        let ITEMS = [];
+        const sales = []; // {item, price, qty, time}
+        let pendingItem = null; // for qty picker
+
+        const $ = sel => document.querySelector(sel);
+        const todayISO = () => new Date().toISOString().slice(0, 10);
+        const money = n => CURRENCY + (Number(n) || 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+        const itemsDiv = $('#items');
+        const salesDiv = $('#sales');
+        const totalEl = $('#total');
+        const countEl = $('#count');
+
+        function openModal(id) { const m = document.getElementById(id); if (m) m.classList.add('show'); }
+        function closeModal(id) { const m = document.getElementById(id); if (m) m.classList.remove('show'); }
+        document.addEventListener('click', (e) => { const id = e.target.getAttribute?.('data-close'); if (id) closeModal(id); });
+
+        function loadItems() {
+            const raw = localStorage.getItem(LS_ITEMS);
+            ITEMS = raw ? JSON.parse(raw) : [
+                { name: 'Chicken Donut', price: 120 },
+                { name: 'Chicken Popcorn', price: 150 },
+                { name: 'Fries', price: 100 },
+                { name: 'Rolls', price: 80 },
+            ];
+            saveItems();
+        }
+        function saveItems() { localStorage.setItem(LS_ITEMS, JSON.stringify(ITEMS)); }
+
+        function renderItems() {
+            itemsDiv.innerHTML = '';
+            ITEMS.forEach((it) => {
+                const card = document.createElement('div'); card.className = 'card';
+                card.innerHTML = `<h3>${it.name}</h3><div class='price'>${money(it.price)}</div>`;
+                card.onclick = () => openQtyPicker(it);
+                itemsDiv.appendChild(card);
+            });
+        }
+
+        function openQtyPicker(it) {
+            pendingItem = it;
+            $('#qtyTitle').textContent = `Add ${it.name}`;
+            const qwrap = $('#qtyQuick');
+            qwrap.innerHTML = '';
+            [1, 2, 3, 4, 5].forEach(n => {
+                const b = document.createElement('button');
+                b.className = 'qtybtn'; b.textContent = n;
+                b.onclick = () => confirmQty(n);
+                qwrap.appendChild(b);
+            });
+            $('#qtyInput').value = 1;
+            $('#qtyOk').onclick = () => confirmQty(parseInt($('#qtyInput').value || '1', 10));
+            openModal('qtyModal');
+        }
+
+        function confirmQty(qty) {
+            closeModal('qtyModal');
+            qty = Math.max(1, isNaN(qty) ? 1 : qty);
+            addSale(pendingItem, qty);
+            pendingItem = null;
+        }
+
+        function renderSales() {
+            salesDiv.innerHTML = '';
+            let total = 0; let totalQty = 0;
+            sales.forEach((s, idx) => {
+                const row = document.createElement('div'); row.className = 'rowi';
+                const t = new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                const amount = s.price * s.qty; total += amount; totalQty += s.qty;
+                row.innerHTML = `
+          <div class='rowleft'>
+            <span>${s.item} × ${s.qty}</span>
+            <span class='pill'>${t}</span>
+          </div>
+          <div style='display:flex;align-items:center;gap:8px'>
+            <strong>${money(amount)}</strong>
+            <button class='warn' aria-label='Delete entry'>✖</button>
+          </div>`;
+                row.querySelector('button').onclick = () => { deleteSale(idx); };
+                salesDiv.appendChild(row);
+            });
+            totalEl.textContent = total;
+            countEl.textContent = totalQty;
+        }
+
+        function addSale(it, qty = 1) {
+            const entry = { item: it.name, price: +it.price, qty: Math.max(1, +qty || 1), time: Date.now() };
+            sales.unshift(entry); // newest on top
+            renderSales();
+        }
+        function deleteSale(index) {
+            sales.splice(index, 1);
+            renderSales();
+        }
+
+        function doneForTheDay() {
+            const date = todayISO();
+            const totalQty = sales.reduce((a, b) => a + (+b.qty || 1), 0);
+            if (!sales.length) {
+                if (!confirm('No items today. Save an empty record for ' + date + '?')) return;
+            } else if (!confirm('Mark ' + date + ' as DONE and save all sales?')) {
+                return;
+            }
+            localStorage.setItem(LS_PREFIX + date, JSON.stringify(sales));
+            sales.length = 0;
+            renderSales();
+            alert('Saved record for ' + date + '. You can find it under Records. Items: ' + totalQty);
+        }
+
+        function showRecords() {
+            const list = $('#recordsList'); list.innerHTML = '';
+            const keys = Object.keys(localStorage).filter(k => k.startsWith(LS_PREFIX)).sort();
+            if (keys.length === 0) { list.innerHTML = '<p class="muted">No saved records yet.</p>'; openModal('recordsModal'); return; }
+            keys.forEach(k => {
+                const d = k.replace(LS_PREFIX, '');
+                const rec = JSON.parse(localStorage.getItem(k) || '[]');
+                const total = rec.reduce((a, b) => a + (+b.price || 0) * ((+b.qty) || 1), 0);
+                const itemsCount = rec.reduce((a, b) => a + ((+b.qty) || 1), 0);
+                const row = document.createElement('div'); row.className = 'rowi'; row.style.cursor = 'pointer';
+                row.innerHTML = `<div><strong>${d}</strong> <span class='pill'>${itemsCount} items</span></div><div>${money(total)}</div>`;
+                row.onclick = () => showDayDetail(d, rec);
+                list.appendChild(row);
+            });
+            openModal('recordsModal');
+        }
+
+        function showDayDetail(date, rec) {
+            $('#detailTitle').textContent = `Details for ${date}`;
+            const wrap = $('#detailBody');
+            if (!rec || !rec.length) { wrap.innerHTML = '<p class="muted">No items recorded.</p>'; openModal('detailModal'); return; }
+            let html = '<table class="table"><thead><tr><th>Time</th><th>Item</th><th style="width:80px">Qty</th><th style="width:120px">Unit</th><th style="width:120px">Amount</th></tr></thead><tbody>';
+            const norm = rec.map(s => ({ ...s, qty: (+s.qty) || 1 }));
+            norm.forEach(s => {
+                const t = new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                html += `<tr><td>${t}</td><td>${s.item}</td><td>${s.qty}</td><td>${money(s.price)}</td><td>${money(s.price * s.qty)}</td></tr>`;
+            });
+            const total = norm.reduce((a, b) => a + (+b.price || 0) * (+b.qty || 1), 0);
+            const totalItems = norm.reduce((a, b) => a + (+b.qty || 1), 0);
+            html += `<tr><th colspan="4">TOTAL (${totalItems} items)</th><th>${money(total)}</th></tr></tbody></table>`;
+            wrap.innerHTML = html;
+            const btn = $('#exportDetailCsv');
+            btn.onclick = () => exportCsvFor(date, norm);
+            openModal('detailModal');
+        }
+
+        function exportCsvFor(date, rec) {
+            const rows = [['Summary Date', date], ['Items Sold', rec.reduce((a, b) => a + ((+b.qty) || 1), 0)], [], ['Date', 'Time', 'Item', 'Qty', 'Unit Price (BDT)', 'Amount (BDT)']];
+            (rec || sales).forEach(s => {
+                const qty = (+s.qty) || 1;
+                rows.push([date, new Date(s.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), s.item, qty, s.price, s.price * qty]);
+            });
+            const total = (rec || sales).reduce((a, b) => a + (+b.price || 0) * ((+b.qty) || 1), 0);
+            const totalItems = (rec || sales).reduce((a, b) => a + ((+b.qty) || 1), 0);
+            rows.push([]); rows.push(['TOTAL', '', '', totalItems, '', total]);
+            const csv = rows.map(r => r.map(v => `"${String(v).replaceAll('"', '""')}"`).join(',')).join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `sales_${date}.csv`; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 2000);
+        }
+
+        function exportCSV() { exportCsvFor(todayISO(), sales); }
+
+        function openManage() {
+            const tbody = document.querySelector('#itemsTable tbody');
+            tbody.innerHTML = '';
+            ITEMS.forEach((it) => addRow(it.name, it.price));
+            openModal('manageModal');
+        }
+
+        function addRow(name = '', price = '') {
+            const tbody = document.querySelector('#itemsTable tbody');
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><input value="${name}" placeholder="Item name"/></td>
+                      <td><input value="${price}" inputmode="decimal" placeholder="0"/></td>
+                      <td><button class="warn" type="button">Delete</button></td>`;
+            tr.querySelector('button').onclick = () => tr.remove();
+            tbody.appendChild(tr);
+        }
+
+        function saveItemsFromTable() {
+            const rows = Array.from(document.querySelectorAll('#itemsTable tbody tr'));
+            ITEMS = rows.map(r => {
+                const [nameEl, priceEl] = r.querySelectorAll('input');
+                const name = (nameEl.value || '').trim();
+                const price = parseFloat(priceEl.value || '0');
+                return name && !isNaN(price) ? { name, price } : null;
+            }).filter(Boolean);
+            saveItems();
+            renderItems();
+            alert('Items saved');
+            closeModal('manageModal');
+        }
+
+        document.getElementById('export').onclick = exportCSV;
+        document.getElementById('doneDay').onclick = doneForTheDay;
+        document.getElementById('recordsBtn').onclick = showRecords;
+        document.getElementById('manageBtn').onclick = openManage;
+        document.getElementById('addRow').onclick = () => addRow();
+        document.getElementById('saveItemsBtn').onclick = saveItemsFromTable;
+
+        document.querySelectorAll('.modal').forEach(m => {
+            m.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('show'); });
+        });
+
+        loadItems();
+        renderItems();
+        renderSales();
+    </script>
+</body>
+
+</html>
